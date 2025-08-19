@@ -1,119 +1,29 @@
-# -----------------------------------------------------------------------------
-# ERPNext Helm Chart Values (No Bitnami, No IAM)
-# -----------------------------------------------------------------------------
-
-# Disable service accounts
 serviceAccount:
   create: false
   name: ""
-  annotations: {}
 
-# Global settings
-replicaCount: 1
-image:
-  pullPolicy: IfNotPresent
-
-# -----------------------------------------------------------------------------
-# ERPNext main application
-# -----------------------------------------------------------------------------
 erpnext:
-  enabled: true
+  replicaCount: 1
   image:
     repository: frappe/erpnext
-    tag: "14.30.5"
-  ingress:
-    enabled: false
-  persistence:
-    enabled: true
-    size: 8Gi
-    accessMode: ReadWriteOnce
+    tag: v15.75.1
+    pullPolicy: IfNotPresent
 
-# -----------------------------------------------------------------------------
-# Gunicorn (web workers)
-# -----------------------------------------------------------------------------
-worker:
-  gunicorn:
-    replicaCount: 1
-    image:
-      repository: frappe/erpnext-worker
-      tag: "14.30.5"
-    service:
-      type: ClusterIP
-      port: 8000
-    persistence:
-      enabled: false
-    resources:
-      requests:
-        cpu: "500m"
-        memory: "1Gi"
-      limits:
-        cpu: "1"
-        memory: "2Gi"
-
-  default:
-    replicaCount: 1
-    image:
-      repository: frappe/erpnext-worker
-      tag: "14.30.5"
-
-  short:
-    replicaCount: 1
-    image:
-      repository: frappe/erpnext-worker
-      tag: "14.30.5"
-
-  long:
-    replicaCount: 1
-    image:
-      repository: frappe/erpnext-worker
-      tag: "14.30.5"
-
-scheduler:
+gunicorn:
   enabled: true
-  image:
-    repository: frappe/erpnext-worker
-    tag: "14.30.5"
-
-socketio:
-  enabled: true
-  image:
-    repository: frappe/erpnext-socketio
-    tag: "14.30.5"
-
-nginx:
-  enabled: true
-  image:
-    repository: nginx
-    tag: "1.25"
+  replicaCount: 1
   service:
     type: ClusterIP
-    port: 8080
-  persistence:
-    enabled: false
+    port: 8000
 
-# -----------------------------------------------------------------------------
-# Database - Postgres (official image)
-# -----------------------------------------------------------------------------
-postgresql:
-  enabled: true
-  image:
-    repository: postgres
-    tag: "14"
-  auth:
-    username: frappe
-    password: frappe
-    database: erpnext
-  persistence:
-    enabled: true
-    size: 8Gi
+scheduler:
+  enabled: false
 
-# -----------------------------------------------------------------------------
-# Redis - official image
-# -----------------------------------------------------------------------------
-redis:
-  enabled: true
-  image:
-    repository: redis
-    tag: "7"
-  persistence:
-    enabled: false
+worker:
+  enabled: false
+
+socketio:
+  enabled: false
+
+nginx:
+  enabled: false
