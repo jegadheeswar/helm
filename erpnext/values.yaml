@@ -57,7 +57,16 @@ persistence:
     enabled: false
   logs:
     enabled: true
-    storageClass: "gp3"   # <- set to your cluster's default StorageClass
+    storageClass: "gp3"   # <-- set to your cluster's default StorageClass
+
+# ------------------------------
+# Jobs (site create/migrate)
+# ------------------------------
+jobs:
+  create:
+    enabled: true
+  migrate:
+    enabled: true
 
 # ------------------------------
 # Site config (dummy)
