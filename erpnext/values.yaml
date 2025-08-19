@@ -52,7 +52,7 @@ jobs:
     image:
       repository: frappe/erpnext-worker
       tag: version-14
-  migrateSite:
+  migrate:
     enabled: true
     image:
       repository: frappe/erpnext-worker
