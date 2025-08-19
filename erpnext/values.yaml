@@ -1,65 +1,100 @@
-# values.yaml for ERPNext Helm Chart (clean + fixed)
-# No Bitnami dependencies, avoids nil pointers
+# ERPNext Helm Chart Values (no Bitnami, clean + working)
 
+# Global image settings
 image:
   repository: frappe/erpnext
-  tag: v15.0.0
+  tag: "14.30.5"
   pullPolicy: IfNotPresent
 
+# Gunicorn (ERPNext backend app server)
+gunicorn:
+  replicaCount: 1
+  image:
+    repository: frappe/erpnext-worker
+    tag: "14.30.5"
+  service:
+    type: ClusterIP
+    port: 8000
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "1Gi"
+    limits:
+      cpu: "1"
+      memory: "2Gi"
+  livenessProbe:
+    httpGet:
+      path: /api/method/ping
+      port: 8000
+    initialDelaySeconds: 30
+    periodSeconds: 15
+  readinessProbe:
+    httpGet:
+      path: /api/method/ping
+      port: 8000
+    initialDelaySeconds: 20
+    periodSeconds: 10
+
+# Workers
 worker:
   default:
     replicaCount: 1
-    autoscaling:
-      enabled: false
+    image:
+      repository: frappe/erpnext-worker
+      tag: "14.30.5"
     resources:
       requests:
-        cpu: "200m"
-        memory: "256Mi"
+        cpu: "300m"
+        memory: "512Mi"
       limits:
         cpu: "500m"
-        memory: "512Mi"
+        memory: "1Gi"
     livenessProbe:
-      httpGet:
-        path: /api/method/ping
-        port: 8000
-      initialDelaySeconds: 30
-      periodSeconds: 20
+      exec:
+        command: ["pgrep", "-f", "celery.*default"]
+      initialDelaySeconds: 60
+      periodSeconds: 30
     readinessProbe:
-      httpGet:
-        path: /api/method/ping
-        port: 8000
-      initialDelaySeconds: 10
-      periodSeconds: 10
+      exec:
+        command: ["pgrep", "-f", "celery.*default"]
+      initialDelaySeconds: 30
+      periodSeconds: 15
 
   short:
     replicaCount: 1
+    image:
+      repository: frappe/erpnext-worker
+      tag: "14.30.5"
     resources:
       requests:
         cpu: "200m"
         memory: "256Mi"
       limits:
-        cpu: "500m"
+        cpu: "300m"
         memory: "512Mi"
     livenessProbe:
       exec:
         command: ["pgrep", "-f", "celery.*short"]
-      initialDelaySeconds: 30
-      periodSeconds: 20
+      initialDelaySeconds: 60
+      periodSeconds: 30
     readinessProbe:
       exec:
         command: ["pgrep", "-f", "celery.*short"]
-      initialDelaySeconds: 10
-      periodSeconds: 10
+      initialDelaySeconds: 30
+      periodSeconds: 15
 
   long:
     replicaCount: 1
+    image:
+      repository: frappe/erpnext-worker
+      tag: "14.30.5"
     resources:
       requests:
-        memory: "512Mi"
         cpu: "300m"
+        memory: "512Mi"
       limits:
-        memory: "1Gi"
         cpu: "500m"
+        memory: "1Gi"
     livenessProbe:
       exec:
         command: ["pgrep", "-f", "celery.*long"]
@@ -70,63 +105,101 @@ worker:
         command: ["pgrep", "-f", "celery.*long"]
       initialDelaySeconds: 60
       periodSeconds: 20
-    affinity:
-      podAntiAffinity:
-        preferredDuringSchedulingIgnoredDuringExecution:
-        - weight: 100
-          podAffinityTerm:
-            labelSelector:
-              matchExpressions:
-              - key: app.kubernetes.io/component
-                operator: In
-                values: [worker-long]
-            topologyKey: kubernetes.io/hostname
 
-  scheduler:
-    replicaCount: 1
-    resources:
-      requests:
-        cpu: "200m"
-        memory: "256Mi"
-      limits:
-        cpu: "500m"
-        memory: "512Mi"
-    livenessProbe:
-      exec:
-        command: ["pgrep", "-f", "celery.*scheduler"]
-      initialDelaySeconds: 30
-      periodSeconds: 20
-    readinessProbe:
-      exec:
-        command: ["pgrep", "-f", "celery.*scheduler"]
-      initialDelaySeconds: 10
-      periodSeconds: 10
+# Scheduler
+scheduler:
+  replicaCount: 1
+  image:
+    repository: frappe/erpnext-worker
+    tag: "14.30.5"
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "256Mi"
+    limits:
+      cpu: "200m"
+      memory: "512Mi"
 
-  gunicorn:
-    service:
-      type: ClusterIP
-      port: 8000
-    replicaCount: 1
-    image:
-      repository: frappe/erpnext
-      tag: v15.0.0
-      pullPolicy: IfNotPresent
-    resources:
-      requests:
-        cpu: "300m"
-        memory: "512Mi"
-      limits:
-        cpu: "1"
-        memory: "1Gi"
-    livenessProbe:
-      httpGet:
-        path: /api/method/ping
-        port: 8000
-      initialDelaySeconds: 30
-      periodSeconds: 15
-    readinessProbe:
-      httpGet:
-        path: /api/method/ping
-        port: 8000
-      initialDelaySeconds: 15
-      periodSeconds: 10
+# SocketIO (for real-time updates)
+socketio:
+  replicaCount: 1
+  image:
+    repository: frappe/erpnext-worker
+    tag: "14.30.5"
+  service:
+    type: ClusterIP
+    port: 9000
+  resources:
+    requests:
+      cpu: "200m"
+      memory: "256Mi"
+    limits:
+      cpu: "400m"
+      memory: "512Mi"
+
+# Nginx (frontend reverse proxy)
+nginx:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: nginx
+    tag: "1.25"
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 8080
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "128Mi"
+    limits:
+      cpu: "300m"
+      memory: "256Mi"
+  livenessProbe:
+    httpGet:
+      path: /
+      port: 8080
+    initialDelaySeconds: 10
+    periodSeconds: 20
+  readinessProbe:
+    httpGet:
+      path: /
+      port: 8080
+    initialDelaySeconds: 5
+    periodSeconds: 10
+
+# Database (Postgres)
+postgresql:
+  enabled: true
+  image:
+    repository: postgres
+    tag: "14"
+  auth:
+    username: frappe
+    password: frappe
+    database: erpnext
+  service:
+    port: 5432
+  resources:
+    requests:
+      cpu: "200m"
+      memory: "512Mi"
+    limits:
+      cpu: "500m"
+      memory: "1Gi"
+
+# Redis
+redis:
+  enabled: true
+  image:
+    repository: redis
+    tag: "7"
+  service:
+    port: 6379
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "256Mi"
+    limits:
+      cpu: "300m"
+      memory: "512Mi"
