@@ -1,74 +1,58 @@
-# Default values for erpnext.
-# This is a YAML-formatted file.
-# Declare variables to be passed into your templates.
-
-# Configure external database host
-# dbHost: ""
-# dbPort: 3306
-# dbRootUser: ""
-# dbRootPassword: ""
-# dbRds: false
-# dbExistingSecret: ""
-# dbExistingSecretPasswordKey: "password"
+# values.yaml for ERPNext Helm Chart (clean + fixed)
+# No Bitnami dependencies, avoids nil pointers
 
 image:
   repository: frappe/erpnext
-  tag: v15.75.1
+  tag: v15.0.0
   pullPolicy: IfNotPresent
 
-nginx:
-  replicaCount: 1
-  autoscaling:
-    enabled: false
-    minReplicas: 1
-    maxReplicas: 3
-    targetCPU: 75
-    targetMemory: 75
-  # config: |
-  #   # custom conf /etc/nginx/conf.d/default.conf
-  environment:
-    upstreamRealIPAddress: "127.0.0.1"
-    upstreamRealIPRecursive: "off"
-    upstreamRealIPHeader: "X-Forwarded-For"
-    frappeSiteNameHeader: "$host"
-    proxyReadTimeout: "120"
-    clientMaxBodySize: "50m"
-  livenessProbe:
-    tcpSocket:
-      port: 8080
-    initialDelaySeconds: 5
-    periodSeconds: 10
-  readinessProbe:
-    tcpSocket:
-      port: 8080
-    initialDelaySeconds: 5
-    periodSeconds: 10
-  service:
-    type: ClusterIP
-    port: 8080
-  resources: {}
-  nodeSelector: {}
-  tolerations: []
-  affinity: {}
-  # Custom topologySpreadConstraints (uncomment and modify to override defaults)
-  # topologySpreadConstraints:
-  #   - maxSkew: 2
-  #     topologyKey: failure-domain.beta.kubernetes.io/zone
-  #     whenUnsatisfiable: ScheduleAnyway
-
-  # Default topologySpreadConstraints (used if topologySpreadConstraints is not set)
-  defaultTopologySpread:
-    maxSkew: 1
-    topologyKey: kubernetes.io/hostname
-    whenUnsatisfiable: DoNotSchedule
-  envVars: []
-  initContainers: []
-  sidecars: []
-
 worker:
+  default:
+    replicaCount: 1
+    autoscaling:
+      enabled: false
+    resources:
+      requests:
+        cpu: "200m"
+        memory: "256Mi"
+      limits:
+        cpu: "500m"
+        memory: "512Mi"
+    livenessProbe:
+      httpGet:
+        path: /api/method/ping
+        port: 8000
+      initialDelaySeconds: 30
+      periodSeconds: 20
+    readinessProbe:
+      httpGet:
+        path: /api/method/ping
+        port: 8000
+      initialDelaySeconds: 10
+      periodSeconds: 10
+
+  short:
+    replicaCount: 1
+    resources:
+      requests:
+        cpu: "200m"
+        memory: "256Mi"
+      limits:
+        cpu: "500m"
+        memory: "512Mi"
+    livenessProbe:
+      exec:
+        command: ["pgrep", "-f", "celery.*short"]
+      initialDelaySeconds: 30
+      periodSeconds: 20
+    readinessProbe:
+      exec:
+        command: ["pgrep", "-f", "celery.*short"]
+      initialDelaySeconds: 10
+      periodSeconds: 10
+
   long:
     replicaCount: 1
-    # Add proper resource requests
     resources:
       requests:
         memory: "512Mi"
@@ -76,24 +60,16 @@ worker:
       limits:
         memory: "1Gi"
         cpu: "500m"
-    
-    # Configure proper health checks
     livenessProbe:
       exec:
         command: ["pgrep", "-f", "celery.*long"]
-      initialDelaySeconds: 120  # Long workers need more startup time
+      initialDelaySeconds: 120
       periodSeconds: 30
-      failureThreshold: 3
-    
     readinessProbe:
       exec:
         command: ["pgrep", "-f", "celery.*long"]
       initialDelaySeconds: 60
       periodSeconds: 20
-      successThreshold: 1
-      failureThreshold: 3
-    
-    # Add basic pod anti-affinity
     affinity:
       podAntiAffinity:
         preferredDuringSchedulingIgnoredDuringExecution:
@@ -105,383 +81,52 @@ worker:
                 operator: In
                 values: [worker-long]
             topologyKey: kubernetes.io/hostname
-  default:
-    replicaCount: 1
-    autoscaling:
-      enabled: false
-      minReplicas: 1
-      maxReplicas: 3
-      targetCPU: 75
-      targetMemory: 75
-    resources: {}
-    nodeSelector: {}
-    tolerations: []
-    affinity: {}
-    livenessProbe:
-      override: false
-      probe: {}
-    readinessProbe:
-      override: false
-      probe: {}
-    envVars: []
-    initContainers: []
-    sidecars: []
-
-  short:
-    replicaCount: 1
-    autoscaling:
-      enabled: false
-      minReplicas: 1
-      maxReplicas: 3
-      targetCPU: 75
-      targetMemory: 75
-    resources: {}
-    nodeSelector: {}
-    tolerations: []
-    affinity: {}
-    livenessProbe:
-      override: false
-      probe: {}
-    readinessProbe:
-      override: false
-      probe: {}
-    envVars: []
-    initContainers: []
-    sidecars: []
-
-  long:
-    replicaCount: 1
-    autoscaling:
-      enabled: false
-      minReplicas: 1
-      maxReplicas: 3
-      targetCPU: 75
-      targetMemory: 75
-    resources: {}
-    nodeSelector: {}
-    tolerations: []
-    affinity: {}
-    livenessProbe:
-      override: false
-      probe: {}
-    readinessProbe:
-      override: false
-      probe: {}
-    envVars: []
-    initContainers: []
-    sidecars: []
 
   scheduler:
     replicaCount: 1
-    resources: {}
-    nodeSelector: {}
-    tolerations: []
-    affinity: {}
+    resources:
+      requests:
+        cpu: "200m"
+        memory: "256Mi"
+      limits:
+        cpu: "500m"
+        memory: "512Mi"
     livenessProbe:
-      override: false
-      probe: {}
+      exec:
+        command: ["pgrep", "-f", "celery.*scheduler"]
+      initialDelaySeconds: 30
+      periodSeconds: 20
     readinessProbe:
-      override: false
-      probe: {}
-    envVars: []
-    initContainers: []
-    sidecars: []
+      exec:
+        command: ["pgrep", "-f", "celery.*scheduler"]
+      initialDelaySeconds: 10
+      periodSeconds: 10
 
-
-  # Custom topologySpreadConstraints (uncomment and modify to override defaults)
-  # topologySpreadConstraints:
-  #   - maxSkew: 2
-  #     topologyKey: failure-domain.beta.kubernetes.io/zone
-  #     whenUnsatisfiable: ScheduleAnyway
-
-  # Default topologySpreadConstraints (used if topologySpreadConstraints is not set)
-  defaultTopologySpread:
-    maxSkew: 1
-    topologyKey: kubernetes.io/hostname
-    whenUnsatisfiable: DoNotSchedule
-
-
-  healthProbe: |
-    exec:
-      command:
-        - bash
-        - -c
-        - echo "Ping backing services";
-        {{- if .Values.mariadb.enabled }}
-        {{- if eq .Values.mariadb.architecture "replication" }}
-        - wait-for-it {{ .Release.Name }}-mariadb-primary:{{ .Values.mariadb.primary.service.ports.mysql }} -t 1;
-        {{- else }}
-        - wait-for-it {{ .Release.Name }}-mariadb:{{ .Values.mariadb.primary.service.ports.mysql }} -t 1;
-        {{- end }}
-        {{- else if .Values.dbHost }}
-        - wait-for-it {{ .Values.dbHost }}:{{ .Values.mariadb.primary.service.ports.mysql }} -t 1;
-        {{- end }}
-        {{- if index .Values "redis-cache" "host" }}
-        - wait-for-it {{ .Release.Name }}-redis-cache-master:{{ index .Values "redis-cache" "master" "containerPorts" "redis" }} -t 1;
-        {{- else if index .Values "redis-cache" "host" }}
-        - wait-for-it {{ index .Values "redis-cache" "host" }} -t 1;
-        {{- end }}
-        {{- if index .Values "redis-queue" "host" }}
-        - wait-for-it {{ .Release.Name }}-redis-queue-master:{{ index .Values "redis-queue" "master" "containerPorts" "redis" }} -t 1;
-        {{- else if index .Values "redis-queue" "host" }}
-        - wait-for-it {{ index .Values "redis-queue" "host" }} -t 1;
-        {{- end }}
-        {{- if .Values.postgresql.host }}
-        - wait-for-it {{ .Values.postgresql.host }}:{{ .Values.postgresql.primary.service.ports.postgresql }} -t 1;
-        {{- else if .Values.postgresql.enabled }}
-        - wait-for-it {{ .Release.Name }}-postgresql:{{ .Values.postgresql.primary.service.ports.postgresql }} -t 1;
-        {{- end }}
-    initialDelaySeconds: 15
-    periodSeconds: 5
-
-socketio:
-  enabled: true
-  replicaCount: 1
-  service:
-    type: ClusterIP
-    port: 9000
-  
-  # Fixed autoscaling configuration
-  autoscaling:
-    enabled: true
-    minReplicas: 1  # Must be ≥1
-    maxReplicas: 3   # Must be > minReplicas
-    targetCPU: 75
-    targetMemory: 75
-
-  # Health checks
-  livenessProbe:
-    tcpSocket:
-      port: 9000
-    initialDelaySeconds: 60
-    periodSeconds: 20
-    failureThreshold: 3
-  readinessProbe:
-    httpGet:
-      path: /health
-      port: 9000
-    initialDelaySeconds: 30
-    periodSeconds: 15
-    timeoutSeconds: 5
-
-  # Fixed resources (removed duplicate section)
-  resources:
-    requests:
-      memory: "256Mi"
-      cpu: "200m"
-    limits:
-      memory: "512Mi"
-      cpu: "500m"
-
-  affinity:
-    podAntiAffinity:
-      preferredDuringSchedulingIgnoredDuringExecution:
-      - weight: 100
-        podAffinityTerm:
-          labelSelector:
-            matchExpressions:
-            - key: app.kubernetes.io/component
-              operator: In
-              values: [socketio]
-          topologyKey: kubernetes.io/hostname
-
-persistence:
-  worker:
-    enabled: true
-    storageClass: "gp3"
-    # existingClaim: ""
-    size: 20Gi
-    # storageClass: "nfs"
-    accessModes:
-    - ReadWriteOnce
-  logs:
-    # Container based log search and analytics stack recommended
-    enabled: false
-    storageClass: "gp3"
-    # existingClaim: ""
-    size: 20Gi
-    # storageClass: "nfs"
-    accessModes:
-    - ReadWriteOnce
-
-# Ingress
-ingress:
-  # ingressName: ""
-  # className: ""
-  enabled: false
-  annotations: {}
-    # kubernetes.io/ingress.class: nginx
-    # kubernetes.io/tls-acme: "true"
-    # cert-manager.io/cluster-issuer: letsencrypt-prod
-  hosts:
-  - host: erp.cluster.local
-    paths:
-    - path: /
-      pathType: ImplementationSpecific
-  tls: []
-  #  - secretName: auth-server-tls
-  #    hosts:
-  #      - auth-server.local
-
-jobs:
-  volumePermissions:
-    # jobName: ""
-    enabled: false
-    backoffLimit: 0
-    resources: {}
-    nodeSelector: {}
-    tolerations: []
-    affinity: {}
-
-  configure:
-    # jobName: ""
-    enabled: true
-    fixVolume: true
-    backoffLimit: 0
-    resources: {}
-    nodeSelector: {}
-    tolerations: []
-    affinity: {}
-    envVars: []
-    command: []
-    args: []
-
-  createSite:
-    # jobName: ""
-    enabled: false
-    forceCreate: false
-    siteName: "erp.cluster.local"
-    adminPassword: "changeit"
-    adminExistingSecret: ""
-    adminExistingSecretKey: "password"
-    installApps:
-    - "erpnext"
-    dbType: "mariadb"
-    backoffLimit: 0
-    resources: {}
-    nodeSelector: {}
-    tolerations: []
-    affinity: {}
-
-  dropSite:
-    # jobName: ""
-    enabled: false
-    forced: false
-    siteName: "erp.cluster.local"
-    backoffLimit: 0
-    resources: {}
-    nodeSelector: {}
-    tolerations: []
-    affinity: {}
-
-  backup:
-    # jobName: ""
-    enabled: false
-    siteName: "erp.cluster.local"
-    withFiles: true
-    backoffLimit: 0
-    resources: {}
-    nodeSelector: {}
-    tolerations: []
-    affinity: {}
-
-  migrate:
-    # jobName: ""
-    enabled: false
-    siteName: "erp.cluster.local"
-    skipFailing: false
-    backoffLimit: 0
-    resources: {}
-    nodeSelector: {}
-    tolerations: []
-    affinity: {}
-
-  custom:
-    enabled: false
-    jobName: ""
-    labels: {}
-    backoffLimit: 0
-    initContainers: []
-    containers: []
-    restartPolicy: Never
-    volumes: []
-    nodeSelector: {}
-    affinity: {}
-    tolerations: []
-
-imagePullSecrets: []
-nameOverride: ""
-fullnameOverride: ""
-
-serviceAccount:
-  # Specifies whether a service account should be created
-  create: true
-
-podSecurityContext:
-  supplementalGroups: [1000]
-
-securityContext:
-  capabilities:
-    add:
-    - CAP_CHOWN
-  # readOnlyRootFilesystem: true
-  # runAsNonRoot: true
-  # runAsUser: 1000
-
-redis-cache:
-  # https://github.com/bitnami/charts/tree/master/bitnami/redis
-  enabled: true
-  # host: ""
-  architecture: standalone
-  auth:
-    enabled: false
-    sentinel: false
-  master:
-    containerPorts:
-      redis: 6379
-    persistence:
-      enabled: false
-
-redis-queue:
-  # https://github.com/bitnami/charts/tree/master/bitnami/redis
-  enabled: true
-  # host: ""
-  architecture: standalone
-  auth:
-    enabled: false
-    sentinel: false
-  master:
-    containerPorts:
-      redis: 6379
-    persistence:
-      enabled: false
-
-mariadb:
-  # https://github.com/bitnami/charts/tree/master/bitnami/mariadb
-  enabled: true
-  auth:
-    rootPassword: "changeit"
-    username: "erpnext"
-    password: "changeit"
-    replicationPassword: "changeit"
-  primary:
+  gunicorn:
     service:
-      ports:
-        mysql: 3306
-    extraFlags: >-
-      --skip-character-set-client-handshake
-      --skip-innodb-read-only-compressed
-      --character-set-server=utf8mb4
-      --collation-server=utf8mb4_unicode_ci
-
-postgresql:
-  # https://github.com/bitnami/charts/tree/master/bitnami/postgresql
-  enabled: false
-  # host: ""
-  auth:
-    username: "postgres"
-    postgresPassword: "changeit"
-  primary:
-    service:
-      ports:
-        postgresql: 5432
+      type: ClusterIP
+      port: 8000
+    replicaCount: 1
+    image:
+      repository: frappe/erpnext
+      tag: v15.0.0
+      pullPolicy: IfNotPresent
+    resources:
+      requests:
+        cpu: "300m"
+        memory: "512Mi"
+      limits:
+        cpu: "1"
+        memory: "1Gi"
+    livenessProbe:
+      httpGet:
+        path: /api/method/ping
+        port: 8000
+      initialDelaySeconds: 30
+      periodSeconds: 15
+    readinessProbe:
+      httpGet:
+        path: /api/method/ping
+        port: 8000
+      initialDelaySeconds: 15
+      periodSeconds: 10
