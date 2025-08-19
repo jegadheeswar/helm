@@ -31,22 +31,23 @@ worker:
 
 persistence:
   enabled: true
-  accessMode: ["ReadWriteOnce"]  # <- ensure accessModes is a list
-  size: 1Gi
-  logsSize: 1Gi
   gunicorn:
     enabled: true
+    accessModes:
+      - ReadWriteOnce
+    size: 1Gi
+  logs:
+    enabled: true
+    storageClass: "gp3"
+    accessModes:
+      - ReadWriteOnce
+    size: 1Gi
   worker:
     enabled: false
   socketio:
     enabled: false
   nginx:
     enabled: false
-  logs:
-    enabled: true
-    storageClass: "gp3"
-    accessMode: ["ReadWriteOnce"]   # <- ensure logs PVC accessModes is set
-    size: 1Gi                    # <- specify size for logs PVC
 
 jobs:
   createSite:
