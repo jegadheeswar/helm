@@ -1,10 +1,18 @@
-# ERPNext Helm Chart Values (clean + persistent, no Bitnami, no IAM)
+# =========================================================
+# ERPNext Helm Chart Values (clean + working + persistent)
+# Compatible with official frappe/helm chart
+# =========================================================
 
 # Global ERPNext image
 image:
   repository: frappe/erpnext
   tag: "14.30.5"
   pullPolicy: IfNotPresent
+
+# Service Account (disable to avoid IAM bindings)
+serviceAccount:
+  create: false
+  name: ""
 
 # Gunicorn (backend app server)
 gunicorn:
@@ -15,6 +23,13 @@ gunicorn:
   service:
     type: ClusterIP
     port: 8000
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "1Gi"
+    limits:
+      cpu: "1"
+      memory: "2Gi"
 
 # Workers (default, short, long)
 worker:
@@ -41,7 +56,7 @@ scheduler:
     repository: frappe/erpnext-worker
     tag: "14.30.5"
 
-# SocketIO
+# SocketIO (for real-time updates)
 socketio:
   replicaCount: 1
   image:
@@ -51,7 +66,7 @@ socketio:
     type: ClusterIP
     port: 9000
 
-# Nginx
+# Nginx (frontend reverse proxy)
 nginx:
   enabled: true
   replicaCount: 1
@@ -63,7 +78,7 @@ nginx:
     type: ClusterIP
     port: 8080
 
-# MariaDB (instead of Postgres)
+# MariaDB (required by ERPNext, Postgres not supported)
 mariadb:
   enabled: true
   image:
@@ -77,13 +92,13 @@ mariadb:
   primary:
     persistence:
       enabled: true
-      storageClass: standard   # <-- change to your storageClass (longhorn, efs, etc.)
+      storageClass: standard     # <-- CHANGE to your cluster's storageClass
       accessModes: ["ReadWriteOnce"]
       size: 10Gi
     service:
       port: 3306
 
-# Redis
+# Redis (for caching + queues)
 redis:
   enabled: true
   image:
@@ -92,21 +107,42 @@ redis:
   master:
     persistence:
       enabled: true
-      storageClass: standard   # <-- change to your storageClass
+      storageClass: standard     # <-- CHANGE
       accessModes: ["ReadWriteOnce"]
       size: 2Gi
   service:
     port: 6379
 
-# ERPNext volumes (sites + logs)
+# ERPNext persistence (sites + logs)
 persistence:
   sites:
     enabled: true
     accessMode: ReadWriteOnce
     size: 5Gi
-    storageClass: standard   # <-- change this
+    storageClass: standard      # <-- CHANGE
   logs:
     enabled: true
     accessMode: ReadWriteOnce
     size: 2Gi
-    storageClass: standard   # <-- change this
+    storageClass: standard      # <-- CHANGE
+
+# Disable optional jobs (for simplicity)
+jobs:
+  createSite:
+    enabled: false
+  backup:
+    enabled: false
+  migrate:
+    enabled: false
+  restore:
+    enabled: false
+  dropSite:
+    enabled: false
+
+# Disable ingress by default (use your own ingress controller later)
+ingress:
+  enabled: false
+
+# No autoscaling
+autoscaling:
+  enabled: false
