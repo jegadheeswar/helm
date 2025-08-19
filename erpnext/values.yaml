@@ -1,20 +1,19 @@
-# =========================================================
-# ERPNext Helm Chart Values (clean + working + persistent)
-# Compatible with official frappe/helm chart
-# =========================================================
+# ERPNext Helm Chart Values
+# Clean version - no Bitnami dependencies, no IAM policies
 
-# Global ERPNext image
+# Global image settings
 image:
   repository: frappe/erpnext
   tag: "14.30.5"
   pullPolicy: IfNotPresent
 
-# Service Account (disable to avoid IAM bindings)
+# ServiceAccount (disabled for your case)
 serviceAccount:
   create: false
   name: ""
+  annotations: {}
 
-# Gunicorn (backend app server)
+# Gunicorn (ERPNext backend app server)
 gunicorn:
   replicaCount: 1
   image:
@@ -30,24 +29,95 @@ gunicorn:
     limits:
       cpu: "1"
       memory: "2Gi"
+  livenessProbe:
+    httpGet:
+      path: /api/method/ping
+      port: 8000
+    initialDelaySeconds: 30
+    periodSeconds: 15
+  readinessProbe:
+    httpGet:
+      path: /api/method/ping
+      port: 8000
+    initialDelaySeconds: 20
+    periodSeconds: 10
 
-# Workers (default, short, long)
-worker:
+# Workers
+workers:
   default:
     replicaCount: 1
     image:
       repository: frappe/erpnext-worker
       tag: "14.30.5"
+    service:
+      type: ClusterIP
+    resources:
+      requests:
+        cpu: "300m"
+        memory: "512Mi"
+      limits:
+        cpu: "500m"
+        memory: "1Gi"
+    livenessProbe:
+      exec:
+        command: ["pgrep", "-f", "celery.*default"]
+      initialDelaySeconds: 60
+      periodSeconds: 30
+    readinessProbe:
+      exec:
+        command: ["pgrep", "-f", "celery.*default"]
+      initialDelaySeconds: 30
+      periodSeconds: 15
+
   short:
     replicaCount: 1
     image:
       repository: frappe/erpnext-worker
       tag: "14.30.5"
+    service:
+      type: ClusterIP
+    resources:
+      requests:
+        cpu: "200m"
+        memory: "256Mi"
+      limits:
+        cpu: "300m"
+        memory: "512Mi"
+    livenessProbe:
+      exec:
+        command: ["pgrep", "-f", "celery.*short"]
+      initialDelaySeconds: 60
+      periodSeconds: 30
+    readinessProbe:
+      exec:
+        command: ["pgrep", "-f", "celery.*short"]
+      initialDelaySeconds: 30
+      periodSeconds: 15
+
   long:
     replicaCount: 1
     image:
       repository: frappe/erpnext-worker
       tag: "14.30.5"
+    service:
+      type: ClusterIP
+    resources:
+      requests:
+        cpu: "300m"
+        memory: "512Mi"
+      limits:
+        cpu: "500m"
+        memory: "1Gi"
+    livenessProbe:
+      exec:
+        command: ["pgrep", "-f", "celery.*long"]
+      initialDelaySeconds: 120
+      periodSeconds: 30
+    readinessProbe:
+      exec:
+        command: ["pgrep", "-f", "celery.*long"]
+      initialDelaySeconds: 60
+      periodSeconds: 20
 
 # Scheduler
 scheduler:
@@ -55,6 +125,13 @@ scheduler:
   image:
     repository: frappe/erpnext-worker
     tag: "14.30.5"
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "256Mi"
+    limits:
+      cpu: "200m"
+      memory: "512Mi"
 
 # SocketIO (for real-time updates)
 socketio:
@@ -65,6 +142,13 @@ socketio:
   service:
     type: ClusterIP
     port: 9000
+  resources:
+    requests:
+      cpu: "200m"
+      memory: "256Mi"
+    limits:
+      cpu: "400m"
+      memory: "512Mi"
 
 # Nginx (frontend reverse proxy)
 nginx:
@@ -77,72 +161,66 @@ nginx:
   service:
     type: ClusterIP
     port: 8080
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "128Mi"
+    limits:
+      cpu: "300m"
+      memory: "256Mi"
+  livenessProbe:
+    httpGet:
+      path: /
+      port: 8080
+    initialDelaySeconds: 10
+    periodSeconds: 20
+  readinessProbe:
+    httpGet:
+      path: /
+      port: 8080
+    initialDelaySeconds: 5
+    periodSeconds: 10
 
-# MariaDB (required by ERPNext, Postgres not supported)
-mariadb:
+# Database (Postgres)
+postgresql:
   enabled: true
   image:
-    repository: mariadb
-    tag: "10.11"
+    repository: postgres
+    tag: "14"
   auth:
-    rootPassword: root
     username: frappe
     password: frappe
     database: erpnext
-  primary:
-    persistence:
-      enabled: true
-      storageClass: standard     # <-- CHANGE to your cluster's storageClass
-      accessModes: ["ReadWriteOnce"]
-      size: 10Gi
-    service:
-      port: 3306
+  service:
+    port: 5432
+  persistence:
+    enabled: true
+    size: 8Gi
+    storageClass: ""
+  resources:
+    requests:
+      cpu: "200m"
+      memory: "512Mi"
+    limits:
+      cpu: "500m"
+      memory: "1Gi"
 
-# Redis (for caching + queues)
+# Redis
 redis:
   enabled: true
   image:
     repository: redis
     tag: "7"
-  master:
-    persistence:
-      enabled: true
-      storageClass: standard     # <-- CHANGE
-      accessModes: ["ReadWriteOnce"]
-      size: 2Gi
   service:
     port: 6379
-
-# ERPNext persistence (sites + logs)
-persistence:
-  sites:
+  persistence:
     enabled: true
-    accessMode: ReadWriteOnce
-    size: 5Gi
-    storageClass: standard      # <-- CHANGE
-  logs:
-    enabled: true
-    accessMode: ReadWriteOnce
     size: 2Gi
-    storageClass: standard      # <-- CHANGE
-
-# Disable optional jobs (for simplicity)
-jobs:
-  createSite:
-    enabled: false
-  backup:
-    enabled: false
-  migrate:
-    enabled: false
-  restore:
-    enabled: false
-  dropSite:
-    enabled: false
-
-# Disable ingress by default (use your own ingress controller later)
-ingress:
-  enabled: false
-
-# No autoscaling
-autoscaling:
-  enabled: false
+    storageClass: ""
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "256Mi"
+    limits:
+      cpu: "300m"
+      memory: "512Mi"
