@@ -47,12 +47,12 @@ persistence:
     storageClass: "gp3"
 
 jobs:
-  create:
+  createSite:
     enabled: true
     image:
       repository: frappe/erpnext-worker
       tag: version-14
-  migrate:
+  migrateSite:
     enabled: true
     image:
       repository: frappe/erpnext-worker
