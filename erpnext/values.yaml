@@ -55,6 +55,8 @@ persistence:
     enabled: false
   nginx:
     enabled: false
+  logs:
+    enabled: true   # <--- fixed to satisfy pvc-logs.yaml
 
 # ------------------------------
 # Site config (dummy)
