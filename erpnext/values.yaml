@@ -256,7 +256,7 @@ socketio:
 
 persistence:
   worker:
-    enabled: true
+    enabled: false
     storageClass: "efs-sc"
     # existingClaim: ""
     size: 20Gi
