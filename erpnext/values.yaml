@@ -1,29 +1,26 @@
-serviceAccount:
-  create: false
-  name: ""
+image:
+  repository: frappe/erpnext
+  tag: version-14
+  pullPolicy: IfNotPresent
 
-erpnext:
-  replicaCount: 1
-  image:
-    repository: frappe/erpnext
-    tag: v15.75.1
-    pullPolicy: IfNotPresent
+replicaCount: 1
 
 gunicorn:
-  enabled: true
-  replicaCount: 1
   service:
     type: ClusterIP
     port: 8000
 
-scheduler:
-  enabled: false
+persistence:
+  enabled: true
+  accessMode: ReadWriteOnce
+  size: 1Gi
+  logsSize: 1Gi
 
-worker:
-  enabled: false
-
-socketio:
-  enabled: false
-
-nginx:
-  enabled: false
+siteConfig:
+  dbHost: mariadb
+  dbRootPassword: admin
+  dbName: erpnext
+  dbUser: erpnext
+  dbPassword: erpnext
+  adminPassword: admin
+  siteName: site1.local
