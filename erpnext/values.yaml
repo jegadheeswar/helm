@@ -226,30 +226,36 @@ worker:
     periodSeconds: 5
 
 socketio:
-  enabled: true  # Must be explicitly enabled
-  service:
-    type: ClusterIP  # Required field
-    port: 9000       # Required field
-  resources: 
-    requests:
-      cpu: 100m
-      memory: 128Mi
+  enabled: true
   replicaCount: 1
+  service:
+    type: ClusterIP
+    port: 9000
+  
+  # Fixed autoscaling configuration
   autoscaling:
     enabled: true
+    minReplicas: 1  # Must be ≥1
+    maxReplicas: 3   # Must be > minReplicas
+    targetCPU: 75
+    targetMemory: 75
+
+  # Health checks
   livenessProbe:
     tcpSocket:
       port: 9000
-    initialDelaySeconds: 60  # Increased from 5
-    periodSeconds: 20        # Increased from 10
+    initialDelaySeconds: 60
+    periodSeconds: 20
     failureThreshold: 3
   readinessProbe:
     httpGet:
       path: /health
       port: 9000
-    initialDelaySeconds: 30  # Increased from 5
-    periodSeconds: 15        # Increased from 10
+    initialDelaySeconds: 30
+    periodSeconds: 15
     timeoutSeconds: 5
+
+  # Fixed resources (removed duplicate section)
   resources:
     requests:
       memory: "256Mi"
@@ -257,6 +263,7 @@ socketio:
     limits:
       memory: "512Mi"
       cpu: "500m"
+
   affinity:
     podAntiAffinity:
       preferredDuringSchedulingIgnoredDuringExecution:
