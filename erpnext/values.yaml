@@ -257,7 +257,7 @@ socketio:
 persistence:
   worker:
     enabled: true
-    storageClass: "efs-sc"
+    storageClass: "gp3"
     # existingClaim: ""
     size: 20Gi
     # storageClass: "nfs"
@@ -266,7 +266,7 @@ persistence:
   logs:
     # Container based log search and analytics stack recommended
     enabled: false
-    storageClass: "efs-sc"
+    storageClass: "gp3"
     # existingClaim: ""
     size: 20Gi
     # storageClass: "nfs"
