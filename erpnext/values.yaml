@@ -257,16 +257,18 @@ socketio:
 persistence:
   worker:
     enabled: true
+    storageClass: "gp3"
     # existingClaim: ""
-    size: gp3
+    size: 20Gi
     # storageClass: "nfs"
     accessModes:
     - ReadWriteMany
   logs:
     # Container based log search and analytics stack recommended
     enabled: false
+    storageClass: "gp3"
     # existingClaim: ""
-    size: gp3
+    size: 20Gi
     # storageClass: "nfs"
     accessModes:
     - ReadWriteMany
