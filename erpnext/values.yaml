@@ -1,3 +1,7 @@
+# ------------------------------
+# Minimal ERPNext values.yaml
+# ------------------------------
+
 image:
   repository: frappe/erpnext
   tag: version-14
@@ -5,12 +9,18 @@ image:
 
 replicaCount: 1
 
+# ------------------------------
+# Gunicorn
+# ------------------------------
 gunicorn:
   enabled: true
   service:
     type: ClusterIP
     port: 8000
 
+# ------------------------------
+# Optional components (disabled)
+# ------------------------------
 nginx:
   enabled: false
   service:
@@ -29,6 +39,9 @@ scheduler:
 worker:
   enabled: false
 
+# ------------------------------
+# Persistence
+# ------------------------------
 persistence:
   enabled: true
   accessMode: ReadWriteOnce
@@ -44,8 +57,11 @@ persistence:
     enabled: false
   logs:
     enabled: true
-    storageClass: ""    # fixed
+    storageClass: "gp3"   # <- set to your cluster's default StorageClass
 
+# ------------------------------
+# Site config (dummy)
+# ------------------------------
 siteConfig:
   dbHost: mariadb
   dbRootPassword: admin
