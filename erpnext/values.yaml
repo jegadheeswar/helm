@@ -258,7 +258,7 @@ persistence:
   worker:
     enabled: true
     # existingClaim: ""
-    size: 8Gi
+    size: gp3
     # storageClass: "nfs"
     accessModes:
     - ReadWriteMany
@@ -266,7 +266,7 @@ persistence:
     # Container based log search and analytics stack recommended
     enabled: false
     # existingClaim: ""
-    size: 8Gi
+    size: gp3
     # storageClass: "nfs"
     accessModes:
     - ReadWriteMany
