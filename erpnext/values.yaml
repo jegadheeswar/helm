@@ -66,36 +66,45 @@ nginx:
   sidecars: []
 
 worker:
-  gunicorn:
+  long:
     replicaCount: 1
-    autoscaling:
-      enabled: false
-      minReplicas: 1
-      maxReplicas: 3
-      targetCPU: 75
-      targetMemory: 75
+    # Add proper resource requests
+    resources:
+      requests:
+        memory: "512Mi"
+        cpu: "300m"
+      limits:
+        memory: "1Gi"
+        cpu: "500m"
+    
+    # Configure proper health checks
     livenessProbe:
-      tcpSocket:
-        port: 8000
-      initialDelaySeconds: 5
-      periodSeconds: 10
+      exec:
+        command: ["pgrep", "-f", "celery.*long"]
+      initialDelaySeconds: 120  # Long workers need more startup time
+      periodSeconds: 30
+      failureThreshold: 3
+    
     readinessProbe:
-      tcpSocket:
-        port: 8000
-      initialDelaySeconds: 5
-      periodSeconds: 10
-    service:
-      type: ClusterIP
-      port: 8000
-    resources: {}
-    nodeSelector: {}
-    tolerations: []
-    affinity: {}
-    args: []
-    envVars: []
-    initContainers: []
-    sidecars: []
-
+      exec:
+        command: ["pgrep", "-f", "celery.*long"]
+      initialDelaySeconds: 60
+      periodSeconds: 20
+      successThreshold: 1
+      failureThreshold: 3
+    
+    # Add basic pod anti-affinity
+    affinity:
+      podAntiAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+              - key: app.kubernetes.io/component
+                operator: In
+                values: [worker-long]
+            topologyKey: kubernetes.io/hostname
   default:
     replicaCount: 1
     autoscaling:
