@@ -1,8 +1,6 @@
 apiVersion: v2
 name: erpnext
-description: Kubernetes Helm Chart for the latest stable ERPNext branch (no Bitnami deps)
-icon: https://raw.githubusercontent.com/frappe/erpnext/develop/erpnext/public/images/erpnext-logo.png
+description: Minimal ERPNext deployment (Gunicorn only)
 type: application
-version: 7.0.228
-appVersion: v15.75.1
-dependencies: []
+version: 0.1.0
+appVersion: "14"
