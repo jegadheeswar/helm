@@ -1,3 +1,7 @@
+# ------------------------------
+# Minimal ERPNext values.yaml
+# ------------------------------
+
 image:
   repository: frappe/erpnext
   tag: version-14
@@ -5,17 +9,56 @@ image:
 
 replicaCount: 1
 
+# ------------------------------
+# Gunicorn
+# ------------------------------
 gunicorn:
+  enabled: true
   service:
     type: ClusterIP
     port: 8000
 
+# ------------------------------
+# Optional components (disabled)
+# ------------------------------
+nginx:
+  enabled: false
+  service:
+    type: ClusterIP
+    port: 8080
+
+socketio:
+  enabled: false
+  service:
+    type: ClusterIP
+    port: 9000
+
+scheduler:
+  enabled: false
+
+worker:
+  enabled: false
+
+# ------------------------------
+# Persistence
+# ------------------------------
 persistence:
   enabled: true
   accessMode: ReadWriteOnce
   size: 1Gi
   logsSize: 1Gi
+  gunicorn:
+    enabled: true
+  worker:
+    enabled: false
+  socketio:
+    enabled: false
+  nginx:
+    enabled: false
 
+# ------------------------------
+# Site config (dummy)
+# ------------------------------
 siteConfig:
   dbHost: mariadb
   dbRootPassword: admin
