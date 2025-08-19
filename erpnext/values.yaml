@@ -1,187 +1,99 @@
-# ERPNext Helm Chart Values
-# Clean version - no Bitnami dependencies, no IAM policies
+# -----------------------------------------------------------------------------
+# ERPNext Helm Chart Values (No Bitnami, No IAM)
+# -----------------------------------------------------------------------------
 
-# Global image settings
-image:
-  repository: frappe/erpnext
-  tag: "14.30.5"
-  pullPolicy: IfNotPresent
-
-# ServiceAccount (disabled for your case)
+# Disable service accounts
 serviceAccount:
   create: false
   name: ""
   annotations: {}
 
-# Gunicorn (ERPNext backend app server)
-gunicorn:
-  replicaCount: 1
-  image:
-    repository: frappe/erpnext-worker
-    tag: "14.30.5"
-  service:
-    type: ClusterIP
-    port: 8000
-  resources:
-    requests:
-      cpu: "500m"
-      memory: "1Gi"
-    limits:
-      cpu: "1"
-      memory: "2Gi"
-  livenessProbe:
-    httpGet:
-      path: /api/method/ping
-      port: 8000
-    initialDelaySeconds: 30
-    periodSeconds: 15
-  readinessProbe:
-    httpGet:
-      path: /api/method/ping
-      port: 8000
-    initialDelaySeconds: 20
-    periodSeconds: 10
+# Global settings
+replicaCount: 1
+image:
+  pullPolicy: IfNotPresent
 
-# Workers
-workers:
-  default:
+# -----------------------------------------------------------------------------
+# ERPNext main application
+# -----------------------------------------------------------------------------
+erpnext:
+  enabled: true
+  image:
+    repository: frappe/erpnext
+    tag: "14.30.5"
+  ingress:
+    enabled: false
+  persistence:
+    enabled: true
+    size: 8Gi
+    accessMode: ReadWriteOnce
+
+# -----------------------------------------------------------------------------
+# Gunicorn (web workers)
+# -----------------------------------------------------------------------------
+worker:
+  gunicorn:
     replicaCount: 1
     image:
       repository: frappe/erpnext-worker
       tag: "14.30.5"
     service:
       type: ClusterIP
+      port: 8000
+    persistence:
+      enabled: false
     resources:
       requests:
-        cpu: "300m"
-        memory: "512Mi"
-      limits:
         cpu: "500m"
         memory: "1Gi"
-    livenessProbe:
-      exec:
-        command: ["pgrep", "-f", "celery.*default"]
-      initialDelaySeconds: 60
-      periodSeconds: 30
-    readinessProbe:
-      exec:
-        command: ["pgrep", "-f", "celery.*default"]
-      initialDelaySeconds: 30
-      periodSeconds: 15
+      limits:
+        cpu: "1"
+        memory: "2Gi"
+
+  default:
+    replicaCount: 1
+    image:
+      repository: frappe/erpnext-worker
+      tag: "14.30.5"
 
   short:
     replicaCount: 1
     image:
       repository: frappe/erpnext-worker
       tag: "14.30.5"
-    service:
-      type: ClusterIP
-    resources:
-      requests:
-        cpu: "200m"
-        memory: "256Mi"
-      limits:
-        cpu: "300m"
-        memory: "512Mi"
-    livenessProbe:
-      exec:
-        command: ["pgrep", "-f", "celery.*short"]
-      initialDelaySeconds: 60
-      periodSeconds: 30
-    readinessProbe:
-      exec:
-        command: ["pgrep", "-f", "celery.*short"]
-      initialDelaySeconds: 30
-      periodSeconds: 15
 
   long:
     replicaCount: 1
     image:
       repository: frappe/erpnext-worker
       tag: "14.30.5"
-    service:
-      type: ClusterIP
-    resources:
-      requests:
-        cpu: "300m"
-        memory: "512Mi"
-      limits:
-        cpu: "500m"
-        memory: "1Gi"
-    livenessProbe:
-      exec:
-        command: ["pgrep", "-f", "celery.*long"]
-      initialDelaySeconds: 120
-      periodSeconds: 30
-    readinessProbe:
-      exec:
-        command: ["pgrep", "-f", "celery.*long"]
-      initialDelaySeconds: 60
-      periodSeconds: 20
 
-# Scheduler
 scheduler:
-  replicaCount: 1
+  enabled: true
   image:
     repository: frappe/erpnext-worker
     tag: "14.30.5"
-  resources:
-    requests:
-      cpu: "100m"
-      memory: "256Mi"
-    limits:
-      cpu: "200m"
-      memory: "512Mi"
 
-# SocketIO (for real-time updates)
 socketio:
-  replicaCount: 1
+  enabled: true
   image:
-    repository: frappe/erpnext-worker
+    repository: frappe/erpnext-socketio
     tag: "14.30.5"
-  service:
-    type: ClusterIP
-    port: 9000
-  resources:
-    requests:
-      cpu: "200m"
-      memory: "256Mi"
-    limits:
-      cpu: "400m"
-      memory: "512Mi"
 
-# Nginx (frontend reverse proxy)
 nginx:
   enabled: true
-  replicaCount: 1
   image:
     repository: nginx
     tag: "1.25"
-    pullPolicy: IfNotPresent
   service:
     type: ClusterIP
     port: 8080
-  resources:
-    requests:
-      cpu: "100m"
-      memory: "128Mi"
-    limits:
-      cpu: "300m"
-      memory: "256Mi"
-  livenessProbe:
-    httpGet:
-      path: /
-      port: 8080
-    initialDelaySeconds: 10
-    periodSeconds: 20
-  readinessProbe:
-    httpGet:
-      path: /
-      port: 8080
-    initialDelaySeconds: 5
-    periodSeconds: 10
+  persistence:
+    enabled: false
 
-# Database (Postgres)
+# -----------------------------------------------------------------------------
+# Database - Postgres (official image)
+# -----------------------------------------------------------------------------
 postgresql:
   enabled: true
   image:
@@ -191,36 +103,17 @@ postgresql:
     username: frappe
     password: frappe
     database: erpnext
-  service:
-    port: 5432
   persistence:
     enabled: true
     size: 8Gi
-    storageClass: ""
-  resources:
-    requests:
-      cpu: "200m"
-      memory: "512Mi"
-    limits:
-      cpu: "500m"
-      memory: "1Gi"
 
-# Redis
+# -----------------------------------------------------------------------------
+# Redis - official image
+# -----------------------------------------------------------------------------
 redis:
   enabled: true
   image:
     repository: redis
     tag: "7"
-  service:
-    port: 6379
   persistence:
-    enabled: true
-    size: 2Gi
-    storageClass: ""
-  resources:
-    requests:
-      cpu: "100m"
-      memory: "256Mi"
-    limits:
-      cpu: "300m"
-      memory: "512Mi"
+    enabled: false
