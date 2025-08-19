@@ -229,30 +229,37 @@ socketio:
   replicaCount: 1
   autoscaling:
     enabled: false
-    minReplicas: 1
-    maxReplicas: 3
-    targetCPU: 75
-    targetMemory: 75
   livenessProbe:
     tcpSocket:
       port: 9000
-    initialDelaySeconds: 5
-    periodSeconds: 10
+    initialDelaySeconds: 60  # Increased from 5
+    periodSeconds: 20        # Increased from 10
+    failureThreshold: 3
   readinessProbe:
-    tcpSocket:
+    httpGet:
+      path: /health
       port: 9000
-    initialDelaySeconds: 5
-    periodSeconds: 10
-  resources: {}
-  nodeSelector: {}
-  tolerations: []
-  affinity: {}
-  service:
-    type: ClusterIP
-    port: 9000
-  envVars: []
-  initContainers: []
-  sidecars: []
+    initialDelaySeconds: 30  # Increased from 5
+    periodSeconds: 15        # Increased from 10
+    timeoutSeconds: 5
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "200m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+            - key: app.kubernetes.io/component
+              operator: In
+              values: [socketio]
+          topologyKey: kubernetes.io/hostname
 
 persistence:
   worker:
