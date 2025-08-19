@@ -1,4 +1,4 @@
-# ERPNext Helm Chart Values (clean + working, no Bitnami, no IAM)
+# ERPNext Helm Chart Values (clean + persistent, no Bitnami, no IAM)
 
 # Global ERPNext image
 image:
@@ -15,13 +15,6 @@ gunicorn:
   service:
     type: ClusterIP
     port: 8000
-  resources:
-    requests:
-      cpu: "500m"
-      memory: "1Gi"
-    limits:
-      cpu: "1"
-      memory: "2Gi"
 
 # Workers (default, short, long)
 worker:
@@ -30,39 +23,16 @@ worker:
     image:
       repository: frappe/erpnext-worker
       tag: "14.30.5"
-    resources:
-      requests:
-        cpu: "300m"
-        memory: "512Mi"
-      limits:
-        cpu: "500m"
-        memory: "1Gi"
-
   short:
     replicaCount: 1
     image:
       repository: frappe/erpnext-worker
       tag: "14.30.5"
-    resources:
-      requests:
-        cpu: "200m"
-        memory: "256Mi"
-      limits:
-        cpu: "300m"
-        memory: "512Mi"
-
   long:
     replicaCount: 1
     image:
       repository: frappe/erpnext-worker
       tag: "14.30.5"
-    resources:
-      requests:
-        cpu: "300m"
-        memory: "512Mi"
-      limits:
-        cpu: "500m"
-        memory: "1Gi"
 
 # Scheduler
 scheduler:
@@ -70,13 +40,6 @@ scheduler:
   image:
     repository: frappe/erpnext-worker
     tag: "14.30.5"
-  resources:
-    requests:
-      cpu: "100m"
-      memory: "256Mi"
-    limits:
-      cpu: "200m"
-      memory: "512Mi"
 
 # SocketIO
 socketio:
@@ -87,13 +50,6 @@ socketio:
   service:
     type: ClusterIP
     port: 9000
-  resources:
-    requests:
-      cpu: "200m"
-      memory: "256Mi"
-    limits:
-      cpu: "400m"
-      memory: "512Mi"
 
 # Nginx
 nginx:
@@ -106,13 +62,6 @@ nginx:
   service:
     type: ClusterIP
     port: 8080
-  resources:
-    requests:
-      cpu: "100m"
-      memory: "128Mi"
-    limits:
-      cpu: "300m"
-      memory: "256Mi"
 
 # MariaDB (instead of Postgres)
 mariadb:
@@ -126,15 +75,13 @@ mariadb:
     password: frappe
     database: erpnext
   primary:
+    persistence:
+      enabled: true
+      storageClass: standard   # <-- change to your storageClass (longhorn, efs, etc.)
+      accessModes: ["ReadWriteOnce"]
+      size: 10Gi
     service:
       port: 3306
-  resources:
-    requests:
-      cpu: "200m"
-      memory: "512Mi"
-    limits:
-      cpu: "500m"
-      memory: "1Gi"
 
 # Redis
 redis:
@@ -142,12 +89,24 @@ redis:
   image:
     repository: redis
     tag: "7"
+  master:
+    persistence:
+      enabled: true
+      storageClass: standard   # <-- change to your storageClass
+      accessModes: ["ReadWriteOnce"]
+      size: 2Gi
   service:
     port: 6379
-  resources:
-    requests:
-      cpu: "100m"
-      memory: "256Mi"
-    limits:
-      cpu: "300m"
-      memory: "512Mi"
+
+# ERPNext volumes (sites + logs)
+persistence:
+  sites:
+    enabled: true
+    accessMode: ReadWriteOnce
+    size: 5Gi
+    storageClass: standard   # <-- change this
+  logs:
+    enabled: true
+    accessMode: ReadWriteOnce
+    size: 2Gi
+    storageClass: standard   # <-- change this
