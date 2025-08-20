@@ -30,14 +30,14 @@ worker:
   enabled: false
 
 persistence:
-  enabled: true
+  enabled: false
   gunicorn:
-    enabled: true
+    enabled: false
     accessModes:
       - ReadWriteOnce
     size: 1Gi
   logs:
-    enabled: true
+    enabled: false
     storageClass: ""
     accessModes:
       - ReadWriteOnce
