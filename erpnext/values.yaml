@@ -38,7 +38,7 @@ persistence:
     size: 1Gi
   logs:
     enabled: true
-    storageClass: "gp2"
+    storageClass: ""
     accessModes:
       - ReadWriteOnce
     size: 1Gi
