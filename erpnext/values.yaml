@@ -10,12 +10,12 @@ gunicorn:
   service:
     type:  LoadBalancer
     port: 8000
-persistence:
-  nginx:
-    enabled: true
-    service:
-      type: LoadBalancer
-      port: 8000
+    
+nginx:
+  enabled: false
+  service:
+    type: LoadBalancer
+    port: 8000
 
 socketio:
   enabled: false
