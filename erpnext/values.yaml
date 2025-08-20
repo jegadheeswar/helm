@@ -33,15 +33,8 @@ persistence:
   enabled: false
   gunicorn:
     enabled: false
-    accessModes:
-      - ReadWriteOnce
-    size: 1Gi
   logs:
     enabled: false
-    storageClass: ""
-    accessModes:
-      - ReadWriteOnce
-    size: 1Gi
   worker:
     enabled: false
   socketio:
@@ -73,3 +66,26 @@ siteConfig:
   dbPassword: erpnext
   adminPassword: admin
   siteName: site1.local
+
+# --- Disable persistence in dependencies ---
+mariadb:
+  primary:
+    persistence:
+      enabled: false
+      storageClass: ""
+
+postgresql:
+  primary:
+    persistence:
+      enabled: false
+      storageClass: ""
+
+redis:
+  master:
+    persistence:
+      enabled: false
+      storageClass: ""
+  replica:
+    persistence:
+      enabled: false
+      storageClass: ""
