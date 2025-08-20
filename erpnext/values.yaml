@@ -15,7 +15,7 @@ nginx:
   enabled: true
   service:
     type: LoadBalancer
-    port: 8080
+    port: 8000
 
 socketio:
   enabled: false
